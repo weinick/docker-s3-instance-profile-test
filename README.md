@@ -50,11 +50,14 @@ sudo docker load -i s3-test-image.tar
 # 验证镜像加载
 sudo docker images | grep s3-test
 
-# 运行测试（挂载主机的 /tmp 目录到容器的 /host-tmp）
-sudo docker run --rm -v /tmp:/host-tmp s3-test:latest
+# 运行测试（推荐使用 :Z 参数解决 SELinux 权限问题）
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest
 
 # 检查主机上下载的文件
 ls -la /tmp/download/
+
+# 查看下载的文件内容
+cat /tmp/download/downloaded-docker-test-*.txt
 
 # 清理
 rm -f s3-test-image.tar
@@ -64,17 +67,24 @@ rm -f s3-test-image.tar
 
 如果遇到挂载问题，可以先测试挂载是否正常：
 ```bash
-# 测试挂载是否工作
-sudo docker run --rm -v /tmp:/host-tmp s3-test:latest ls -la /host-tmp
+# 测试挂载是否工作（推荐使用 :Z 参数）
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest ls -la /host-tmp
 
-# 如果挂载失败，可以不使用挂载运行（文件会保存在容器内）
+# 如果仍然有问题，尝试不同的挂载方式：
+# 方法 1: 标准挂载
+sudo docker run --rm -v /tmp:/host-tmp s3-test:latest
+
+# 方法 2: SELinux 兼容挂载（推荐）
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest
+
+# 方法 3: 如果挂载失败，不使用挂载（文件会保存在容器内）
 sudo docker run --rm s3-test:latest
 ```
 
 如果下载文件找不到，请检查：
 ```bash
-# 1. 确认使用了正确的挂载参数
-sudo docker run --rm -v /tmp:/host-tmp s3-test:latest
+# 1. 确认使用了正确的挂载参数（推荐使用 :Z）
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest
 
 # 2. 检查主机 /tmp 目录权限
 ls -la /tmp/
