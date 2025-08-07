@@ -76,6 +76,13 @@ if [ $? -eq 0 ]; then
     
     # 显示在其他 EC2 上运行的命令
     echo -e "${YELLOW}📋 在其他 EC2 上运行测试:${NC}"
+    echo -e "${GREEN}# 推荐方式（挂载主机 /tmp 目录，使用 :Z 解决 SELinux 权限问题）${NC}"
+    echo -e "${GREEN}docker run --rm -v /tmp:/host-tmp:Z ${REPOSITORY_URI}:${IMAGE_TAG}${NC}"
+    echo -e "${GREEN}# 然后查看下载的文件：${NC}"
+    echo -e "${GREEN}ls -la /tmp/download/${NC}"
+    echo -e "${GREEN}cat /tmp/download/downloaded-docker-test-*.txt${NC}"
+    echo ""
+    echo -e "${YELLOW}📋 备用方式（不使用挂载，文件保存在容器内）:${NC}"
     echo -e "${GREEN}docker run --rm ${REPOSITORY_URI}:${IMAGE_TAG}${NC}"
 else
     echo -e "${RED}❌ 镜像推送失败${NC}"
