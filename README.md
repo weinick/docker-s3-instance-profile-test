@@ -1,7 +1,147 @@
-# Docker S3 Instance Profile 测试 - 本地打包方案
+# Docker S3 Instance Profile 测试
 
 ## 📋 概述
-由于 EC2 实例无法访问 Docker Hub，我们在本地构建 Docker 镜像，然后传输到 EC2 进行测试。
+本项目用于测试 Docker 容器中的 AWS Instance Profile 访问 S3 功能。由于中国区 EC2 实例连接 Docker Hub 速度较慢或不稳定，本项目提供了两种解决方案来部署和运行测试。
+
+## 🚀 部署方案
+
+### 方案一：本地打包上传方案
+适用于网络环境受限或希望完全离线部署的场景。
+
+### 方案二：AWS Public ECR 方案  
+利用 AWS Global 的 Public ECR 服务，提供更稳定的镜像分发。
+
+---
+
+## 🔧 方案一：本地打包上传方案
+
+### 适用场景
+- 中国区 EC2 无法稳定访问 Docker Hub
+- 需要完全离线部署
+- 对网络依赖要求较低
+
+### 操作步骤
+
+#### 步骤 1: 本地构建 Docker 镜像
+
+在您的本地电脑上：
+
+```bash
+# 进入测试目录
+cd /path/to/docker-s3-test
+
+# 构建并保存 Docker 镜像
+chmod +x build_and_save.sh
+./build_and_save.sh
+```
+
+这将创建一个 `s3-test-image.tar` 文件。
+
+#### 步骤 2: 上传到 EC2
+
+**方法 A: 使用自动化脚本（推荐）**
+```bash
+# 使用脚本上传
+chmod +x upload_to_ec2.sh
+./upload_to_ec2.sh YOUR_EC2_IP [your-key.pem]
+
+# 示例：
+./upload_to_ec2.sh 52.81.92.36
+./upload_to_ec2.sh 52.81.92.36 ~/.ssh/my-key.pem
+```
+
+**方法 B: 使用 SCP 手动上传**
+```bash
+# 替换为您的实际信息
+scp -i your-key.pem s3-test-image.tar ec2-user@YOUR_EC2_IP:~/
+```
+
+#### 步骤 3: 在 EC2 上加载并测试
+
+SSH 连接到 EC2：
+```bash
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+```
+
+在 EC2 上执行：
+```bash
+# 加载 Docker 镜像
+sudo docker load -i s3-test-image.tar
+
+# 验证镜像加载
+sudo docker images | grep s3-test
+
+# 运行测试（推荐使用 :Z 参数解决 SELinux 权限问题）
+sudo docker run --rm -v /tmp:/host-tmp:Z -e S3_BUCKET_NAME=your-actual-bucket-name -e AWS_REGION=cn-north-1 s3-test:latest
+
+# 检查主机上下载的文件
+ls -la /tmp/download/
+
+# 查看下载的文件内容
+cat /tmp/download/downloaded-docker-test-*.txt
+
+# 清理
+rm -f s3-test-image.tar
+```
+
+---
+
+## 🌐 方案二：AWS Public ECR 方案
+
+### 适用场景
+- 希望使用云端镜像仓库
+- 需要在多个 EC2 实例间共享镜像
+- 利用 AWS Global 网络的稳定性
+
+### 操作步骤
+
+#### 步骤 1: 构建并推送到 Public ECR
+
+在您的本地电脑上：
+
+```bash
+# 确保已配置 AWS CLI 和权限
+aws configure
+
+# 构建并推送到 Public ECR
+chmod +x build-and-push-ecr.sh
+./build-and-push-ecr.sh
+```
+
+脚本会自动：
+- 构建 Docker 镜像
+- 登录到 AWS Public ECR
+- 创建仓库（如果不存在）
+- 推送镜像到 Public ECR
+
+#### 步骤 2: 在 EC2 上直接拉取并运行
+
+SSH 连接到 EC2：
+```bash
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+```
+
+在 EC2 上执行：
+```bash
+# 直接拉取并运行（推荐方式）
+sudo docker run --rm -v /tmp:/host-tmp:Z \
+  -e S3_BUCKET_NAME=your-actual-bucket-name \
+  -e AWS_REGION=cn-north-1 \
+  public.ecr.aws/your-registry/s3-instance-profile-test:latest
+
+# 或者先拉取再运行
+sudo docker pull public.ecr.aws/your-registry/s3-instance-profile-test:latest
+sudo docker run --rm -v /tmp:/host-tmp:Z \
+  -e S3_BUCKET_NAME=your-actual-bucket-name \
+  -e AWS_REGION=cn-north-1 \
+  public.ecr.aws/your-registry/s3-instance-profile-test:latest
+
+# 检查结果
+ls -la /tmp/download/
+cat /tmp/download/downloaded-docker-test-*.txt
+```
+
+
 
 ## ⚙️ 配置要求
 
@@ -37,81 +177,6 @@ EC2 实例的 IAM 角色需要以下权限：
     ]
 }
 ```
-
-## 🚀 操作步骤
-
-### 步骤 1: 本地构建 Docker 镜像
-
-在您的本地电脑上：
-
-```bash
-# 进入测试目录
-cd /tmp/docker-s3-test
-
-# 构建并保存 Docker 镜像
-chmod +x build_and_save.sh
-./build_and_save.sh
-```
-
-这将创建一个 `s3-test-image.tar` 文件。
-
-### 步骤 2: 上传到 EC2
-
-#### 方法 A: 使用自动化脚本（推荐）
-```bash
-# 使用脚本上传（需要提供 EC2 IP 地址）
-chmod +x upload_to_ec2.sh
-./upload_to_ec2.sh YOUR_EC2_IP [your-key.pem]
-
-# 示例：
-./upload_to_ec2.sh 52.81.92.36
-./upload_to_ec2.sh 52.81.92.36 ~/.ssh/my-key.pem
-```
-
-#### 方法 B: 使用 SCP 手动上传
-```bash
-# 替换 your-key.pem 为您的实际密钥文件路径，YOUR_EC2_IP 为您的 EC2 实例 IP
-scp -i your-key.pem s3-test-image.tar ec2-user@YOUR_EC2_IP:~/
-```
-
-### 步骤 3: 在 EC2 上加载并测试
-
-SSH 连接到 EC2：
-```bash
-ssh -i your-key.pem ec2-user@YOUR_EC2_IP
-```
-
-在 EC2 上执行：
-```bash
-# 加载 Docker 镜像
-sudo docker load -i s3-test-image.tar
-
-# 验证镜像加载
-sudo docker images | grep s3-test
-
-# 运行测试（推荐使用 :Z 参数解决 SELinux 权限问题）
-# 方法 1: 使用环境变量指定 S3 桶名和区域（推荐）
-sudo docker run --rm -v /tmp:/host-tmp:Z -e S3_BUCKET_NAME=your-actual-bucket-name -e AWS_REGION=us-west-2 s3-test:latest
-
-# 方法 2: 使用命令行参数指定 S3 桶名和区域
-sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest your-actual-bucket-name us-west-2
-
-# 方法 3: 只指定桶名，使用默认区域
-sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest your-actual-bucket-name
-
-# 方法 4: 使用默认桶名和区域（需要修改源码）
-sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest
-
-# 检查主机上下载的文件
-ls -la /tmp/download/
-
-# 查看下载的文件内容
-cat /tmp/download/downloaded-docker-test-*.txt
-
-# 清理
-rm -f s3-test-image.tar
-```
-
 
 
 ## 🔧 配置说明
