@@ -30,6 +30,28 @@ def get_s3_bucket_name():
     
     return default_bucket
 
+def get_aws_region():
+    """获取 AWS 区域，优先级：命令行参数 > 环境变量 > 默认值"""
+    # 1. 检查命令行参数（第二个参数）
+    if len(sys.argv) > 2:
+        return sys.argv[2]
+    
+    # 2. 检查环境变量
+    region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION')
+    if region:
+        return region
+    
+    # 3. 默认值
+    default_region = 'us-east-1'
+    print(f"⚠️  警告: 使用默认区域 '{default_region}'")
+    print(f"   请通过以下方式之一指定实际的 AWS 区域:")
+    print(f"   1. 命令行参数: python test_docker_s3.py bucket-name region-name")
+    print(f"   2. 环境变量: export AWS_REGION=your-region")
+    print(f"   3. Docker 环境变量: docker run -e AWS_REGION=your-region ...")
+    print("")
+    
+    return default_region
+
 def test_docker_s3():
     """测试 Docker 容器中的 S3 访问"""
     print("=" * 60)
@@ -37,13 +59,17 @@ def test_docker_s3():
     print(f"测试时间: {datetime.now()}")
     print("=" * 60)
     
+    # 获取配置参数
+    aws_region = get_aws_region()
+    
     try:
         # 测试 boto3 S3 访问
         print("1. 测试 boto3 S3 访问...")
-        s3_client = boto3.client('s3', region_name='cn-north-1')
+        s3_client = boto3.client('s3', region_name=aws_region)
         response = s3_client.list_buckets()
         
         print(f"✅ Docker 容器中 S3 访问成功！")
+        print(f"   使用区域: {aws_region}")
         print(f"   共有 {len(response['Buckets'])} 个存储桶")
         
         if response['Buckets']:
@@ -81,7 +107,7 @@ def test_docker_s3():
         
         # 测试身份信息
         print("\n3. 测试身份信息...")
-        sts_client = boto3.client('sts', region_name='cn-north-1')
+        sts_client = boto3.client('sts', region_name=aws_region)
         identity = sts_client.get_caller_identity()
         print(f"✅ 当前身份:")
         print(f"   账户ID: {identity['Account']}")

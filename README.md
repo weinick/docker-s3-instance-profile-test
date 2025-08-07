@@ -90,13 +90,16 @@ sudo docker load -i s3-test-image.tar
 sudo docker images | grep s3-test
 
 # 运行测试（推荐使用 :Z 参数解决 SELinux 权限问题）
-# 方法 1: 使用环境变量指定 S3 桶名（推荐）
-sudo docker run --rm -v /tmp:/host-tmp:Z -e S3_BUCKET_NAME=your-actual-bucket-name s3-test:latest
+# 方法 1: 使用环境变量指定 S3 桶名和区域（推荐）
+sudo docker run --rm -v /tmp:/host-tmp:Z -e S3_BUCKET_NAME=your-actual-bucket-name -e AWS_REGION=us-west-2 s3-test:latest
 
-# 方法 2: 使用命令行参数指定 S3 桶名
+# 方法 2: 使用命令行参数指定 S3 桶名和区域
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest your-actual-bucket-name us-west-2
+
+# 方法 3: 只指定桶名，使用默认区域
 sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest your-actual-bucket-name
 
-# 方法 3: 使用默认桶名（需要修改源码）
+# 方法 4: 使用默认桶名和区域（需要修改源码）
 sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest
 
 # 检查主机上下载的文件
@@ -130,6 +133,44 @@ rm -f s3-test-image.tar
 3. **默认值**（最低优先级）：
    - 如果以上两种方式都没有指定，将使用默认值 `your-s3-bucket-name`
    - 脚本会显示警告信息，提醒您指定实际的桶名
+
+### AWS 区域配置
+
+测试脚本支持三种方式指定 AWS 区域（按优先级排序）：
+
+1. **命令行参数**（最高优先级）：
+   ```bash
+   sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest bucket-name region-name
+   ```
+
+2. **环境变量**：
+   ```bash
+   sudo docker run --rm -v /tmp:/host-tmp:Z -e AWS_REGION=us-west-2 s3-test:latest
+   # 或者
+   sudo docker run --rm -v /tmp:/host-tmp:Z -e AWS_DEFAULT_REGION=us-west-2 s3-test:latest
+   ```
+
+3. **默认值**（最低优先级）：
+   - 如果以上两种方式都没有指定，将使用默认值 `us-east-1`
+   - 脚本会显示警告信息，提醒您指定实际的区域
+
+### 完整配置示例
+
+```bash
+# 方法 1: 使用命令行参数（推荐）
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest my-bucket us-west-2
+
+# 方法 2: 使用环境变量
+sudo docker run --rm -v /tmp:/host-tmp:Z \
+  -e S3_BUCKET_NAME=my-bucket \
+  -e AWS_REGION=us-west-2 \
+  s3-test:latest
+
+# 方法 3: 混合使用
+sudo docker run --rm -v /tmp:/host-tmp:Z \
+  -e AWS_REGION=us-west-2 \
+  s3-test:latest my-bucket
+```
 
 ### 脚本参数说明
 
@@ -200,8 +241,15 @@ ls -la /tmp/download/
    2. 环境变量: export S3_BUCKET_NAME=your-actual-bucket-name
    3. Docker 环境变量: docker run -e S3_BUCKET_NAME=your-actual-bucket-name ...
 
+⚠️  警告: 使用默认区域 'us-east-1'
+   请通过以下方式之一指定实际的 AWS 区域:
+   1. 命令行参数: python test_docker_s3.py bucket-name region-name
+   2. 环境变量: export AWS_REGION=your-region
+   3. Docker 环境变量: docker run -e AWS_REGION=your-region ...
+
 1. 测试 boto3 S3 访问...
 ✅ Docker 容器中 S3 访问成功！
+   使用区域: us-east-1
    共有 90 个存储桶
 
    存储桶列表（前3个）:
