@@ -44,20 +44,14 @@ ssh -i your-key.pem ec2-user@52.81.92.36
 
 在 EC2 上执行：
 ```bash
-# 创建本地 download 目录
-mkdir -p download
-
 # 加载 Docker 镜像
 sudo docker load -i s3-test-image.tar
 
 # 验证镜像加载
 sudo docker images | grep s3-test
 
-# 运行测试（挂载 download 目录）
-sudo docker run --rm -v $(pwd)/download:/app/download s3-test:latest
-
-# 检查下载的文件
-ls -la download/
+# 运行测试
+sudo docker run --rm s3-test:latest
 
 # 清理
 rm -f s3-test-image.tar
@@ -99,16 +93,16 @@ rm -f s3-test-image.tar
       - 大小: 156 字节
       - 最后修改: 2025-08-06 13:15:30+00:00
       - ETag: "d41d8cd98f00b204e9800998ecf8427e"
-   📥 从 S3 下载文件到: /app/download/downloaded-docker-test-20250806-131530.txt
+   📥 从 S3 下载文件到: /tmp/download/downloaded-docker-test-20250806-131530.txt
    ✅ 文件下载成功，大小: 156 字节
    ✅ 文件内容验证成功，上传下载完整
    📁 保留测试文件...
    ✅ S3 文件已保留: s3://share-something-only-from-here/docker-test-20250806-131530.txt
    ✅ 原始测试文件已删除: /tmp/docker-test-20250806-131530.txt
-   ✅ 下载文件已保留: /app/download/downloaded-docker-test-20250806-131530.txt
+   ✅ 下载文件已保留: /tmp/download/downloaded-docker-test-20250806-131530.txt
    📋 文件保留总结:
       - S3 文件: s3://share-something-only-from-here/docker-test-20250806-131530.txt
-      - 本地文件: /app/download/downloaded-docker-test-20250806-131530.txt
+      - 本地文件: /tmp/download/downloaded-docker-test-20250806-131530.txt
 
 ============================================================
 🎉 Docker 容器测试成功！方法一在容器中也正常工作！
@@ -143,14 +137,13 @@ pip3 install --user boto3 requests
 - `upload_to_ec2.sh`: 自动上传到 EC2 的脚本
 - `README.md`: 本说明文件
 - `.dockerignore`: Docker 构建忽略文件
-- `download/`: 下载文件保存目录（容器挂载点）
 
 ## 📥 下载文件说明
 
-- 测试脚本会将从 S3 下载的文件保存到容器内的 `/app/download/` 目录
-- 通过 Docker 卷挂载 `-v $(pwd)/download:/app/download`，下载的文件会保存到主机的 `download/` 目录
-- 这样可以在容器运行结束后，仍然能在主机上查看下载的测试文件
-- 上传的临时文件仍然使用 `/tmp` 目录，测试完成后会自动清理
+- 测试脚本会自动在 `/tmp` 目录下创建 `download` 子目录（如果不存在）
+- 从 S3 下载的文件会保存到 `/tmp/download/` 目录中
+- 上传的临时文件保存在 `/tmp` 目录，测试完成后会自动清理
+- 下载的文件会保留在 `/tmp/download/` 目录中，方便查看测试结果
 
 ## 🎯 测试目标
 

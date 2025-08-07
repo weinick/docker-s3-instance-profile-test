@@ -4,11 +4,6 @@ echo "=========================================="
 echo "构建并保存 Docker 镜像"
 echo "=========================================="
 
-# 创建本地 download 目录（用于本地测试）
-echo "0. 准备本地环境..."
-mkdir -p download
-echo "✅ 创建 download 目录"
-
 # 构建 Docker 镜像
 echo "1. 构建 Docker 镜像..."
 docker build -t s3-test:latest .

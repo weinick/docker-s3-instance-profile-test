@@ -87,7 +87,7 @@ def test_file_operations(s3_client):
     local_test_file = f'/tmp/{test_file_name}'
     
     # 创建 download 目录（如果不存在）
-    download_dir = '/app/download'
+    download_dir = '/tmp/download'
     os.makedirs(download_dir, exist_ok=True)
     download_file = f'{download_dir}/downloaded-{test_file_name}'
     
