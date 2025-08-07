@@ -236,11 +236,20 @@ def test_file_operations(s3_client):
                 print(f"   ✅ 原始测试文件已删除: {local_test_file}")
             
             if os.path.exists(download_file):
-                print(f"   ✅ 下载文件已保留: {download_file}")
+                # 显示主机上的真实路径
+                if download_dir.startswith('/host-tmp'):
+                    host_path = download_file.replace('/host-tmp', '/tmp')
+                    print(f"   ✅ 下载文件已保留: {host_path}")
+                else:
+                    print(f"   ✅ 下载文件已保留: {download_file}")
             
             print(f"   📋 文件保留总结:")
             print(f"      - S3 文件: s3://{bucket_name}/{test_file_name}")
-            print(f"      - 本地文件: {download_file}")
+            if download_dir.startswith('/host-tmp'):
+                host_path = download_file.replace('/host-tmp', '/tmp')
+                print(f"      - 本地文件: {host_path}")
+            else:
+                print(f"      - 本地文件: {download_file}")
                     
         except Exception as e:
             print(f"   ⚠️  处理文件时出错: {e}")
