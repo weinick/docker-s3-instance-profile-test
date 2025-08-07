@@ -86,9 +86,27 @@ def test_file_operations(s3_client):
     test_file_name = f'docker-test-{datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
     local_test_file = f'/tmp/{test_file_name}'
     
-    # 创建主机的 /tmp/download 目录（通过挂载点访问）
-    download_dir = '/host-tmp/download'
-    os.makedirs(download_dir, exist_ok=True)
+    # 检查挂载点是否存在
+    host_tmp_path = '/host-tmp'
+    if not os.path.exists(host_tmp_path):
+        print(f"   ⚠️  挂载点不存在: {host_tmp_path}")
+        print(f"   💡 请确保使用 -v /tmp:/host-tmp 参数运行容器")
+        # 回退到容器内路径
+        download_dir = '/tmp/download'
+        print(f"   🔄 回退到容器内路径: {download_dir}")
+    else:
+        # 创建主机的 /tmp/download 目录（通过挂载点访问）
+        download_dir = '/host-tmp/download'
+        print(f"   📁 使用主机挂载路径: {download_dir}")
+    
+    # 创建下载目录
+    try:
+        os.makedirs(download_dir, exist_ok=True)
+        print(f"   ✅ 下载目录创建成功: {download_dir}")
+    except Exception as e:
+        print(f"   ❌ 下载目录创建失败: {e}")
+        return
+    
     download_file = f'{download_dir}/downloaded-{test_file_name}'
     
     try:

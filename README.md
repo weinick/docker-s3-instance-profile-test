@@ -50,7 +50,7 @@ sudo docker load -i s3-test-image.tar
 # 验证镜像加载
 sudo docker images | grep s3-test
 
-# 运行测试（挂载主机的 /tmp 目录）
+# 运行测试（挂载主机的 /tmp 目录到容器的 /host-tmp）
 sudo docker run --rm -v /tmp:/host-tmp s3-test:latest
 
 # 检查主机上下载的文件
@@ -58,6 +58,17 @@ ls -la /tmp/download/
 
 # 清理
 rm -f s3-test-image.tar
+```
+
+### 故障排除
+
+如果遇到挂载问题，可以先测试挂载是否正常：
+```bash
+# 测试挂载是否工作
+sudo docker run --rm -v /tmp:/host-tmp s3-test:latest ls -la /host-tmp
+
+# 如果挂载失败，可以不使用挂载运行（文件会保存在容器内）
+sudo docker run --rm s3-test:latest
 ```
 
 ## 📺 预期测试结果
