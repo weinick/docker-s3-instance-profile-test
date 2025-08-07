@@ -9,8 +9,8 @@ show_usage() {
     echo "  KEY_FILE  - SSH 密钥文件路径 (可选，默认: your-key.pem)"
     echo ""
     echo "示例:"
-    echo "  $0 52.81.92.36"
-    echo "  $0 52.81.92.36 ~/.ssh/my-key.pem"
+    echo "  $0 YOUR_EC2_IP"
+    echo "  $0 YOUR_EC2_IP ~/.ssh/my-key.pem"
     echo ""
     exit 1
 }

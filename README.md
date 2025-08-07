@@ -46,8 +46,8 @@ chmod +x upload_to_ec2.sh
 ./upload_to_ec2.sh YOUR_EC2_IP [your-key.pem]
 
 # 示例：
-./upload_to_ec2.sh 52.81.92.36
-./upload_to_ec2.sh 52.81.92.36 ~/.ssh/my-key.pem
+./upload_to_ec2.sh YOUR_EC2_IP
+./upload_to_ec2.sh YOUR_EC2_IP ~/.ssh/my-key.pem
 ```
 
 **方法 B: 使用 SCP 手动上传**
@@ -251,10 +251,10 @@ sudo docker run --rm -v /tmp:/host-tmp:Z \
 **使用示例**：
 ```bash
 # 使用默认密钥文件
-./upload_to_ec2.sh 52.81.92.36
+./upload_to_ec2.sh YOUR_EC2_IP
 
 # 指定密钥文件
-./upload_to_ec2.sh 52.81.92.36 ~/.ssh/my-key.pem
+./upload_to_ec2.sh YOUR_EC2_IP ~/.ssh/my-key.pem
 ```
 
 ### 故障排除
