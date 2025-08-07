@@ -1,0 +1,28 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+ec2-build-guide.md
+
+# Scripts
+build_and_save.sh
+upload_to_ec2.sh
+build-and-push-ecr.sh
+
+# Docker images
+*.tar
+
+# Download directory
+download/
+
+# Temporary files
+*.tmp
+*.log
+
+# macOS files
+.DS_Store
+
+# ECR policy
+ecr-public-policy.json

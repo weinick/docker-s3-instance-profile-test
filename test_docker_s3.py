@@ -85,7 +85,11 @@ def test_file_operations(s3_client):
     bucket_name = 'share-something-only-from-here'
     test_file_name = f'docker-test-{datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
     local_test_file = f'/tmp/{test_file_name}'
-    download_file = f'/tmp/downloaded-{test_file_name}'
+    
+    # 创建 download 目录（如果不存在）
+    download_dir = '/app/download'
+    os.makedirs(download_dir, exist_ok=True)
+    download_file = f'{download_dir}/downloaded-{test_file_name}'
     
     try:
         # 步骤 1: 创建测试文件
