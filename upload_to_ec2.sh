@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 配置变量
-EC2_IP="52.81.92.36"
+EC2_IP="YOUR_EC2_IP"  # 请替换为您的实际 EC2 IP 地址
 KEY_FILE="your-key.pem"  # 请替换为您的实际密钥文件路径
 IMAGE_FILE="s3-test-image.tar"
 

@@ -24,8 +24,8 @@ chmod +x build_and_save.sh
 
 #### 方法 A: 使用 SCP 上传
 ```bash
-# 替换 your-key.pem 为您的实际密钥文件路径
-scp -i your-key.pem s3-test-image.tar ec2-user@52.81.92.36:~/
+# 替换 your-key.pem 为您的实际密钥文件路径，YOUR_EC2_IP 为您的 EC2 实例 IP
+scp -i your-key.pem s3-test-image.tar ec2-user@YOUR_EC2_IP:~/
 ```
 
 #### 方法 B: 使用自动化脚本
@@ -39,7 +39,7 @@ chmod +x upload_to_ec2.sh
 
 SSH 连接到 EC2：
 ```bash
-ssh -i your-key.pem ec2-user@52.81.92.36
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
 ```
 
 在 EC2 上执行：
@@ -117,18 +117,18 @@ ls -la /tmp/download/
 
 2. 测试元数据服务访问...
 ✅ 元数据服务访问成功
-✅ 角色名称: PVRE-SSMOnboardingRole-K4CRSMYV2BU9
+✅ 角色名称: YOUR-INSTANCE-ROLE-NAME
 
 3. 测试身份信息...
 ✅ 当前身份:
-   账户ID: 994626867605
-   ARN: arn:aws-cn:sts::994626867605:assumed-role/PVRE-SSMOnboardingRole-K4CRSMYV2BU9/i-07f41015322e2403c
+   账户ID: 123456789012
+   ARN: arn:aws:sts::123456789012:assumed-role/YOUR-INSTANCE-ROLE-NAME/i-1234567890abcdef0
 
 4. 测试 S3 文件上传和下载...
    📝 创建测试文件: /tmp/docker-test-20250806-131530.txt
    ✅ 测试文件创建成功，大小: 156 字节
-   📤 上传文件到 S3 桶: share-something-only-from-here
-   ✅ 文件上传成功: s3://share-something-only-from-here/docker-test-20250806-131530.txt
+   📤 上传文件到 S3 桶: your-s3-bucket-name
+   ✅ 文件上传成功: s3://your-s3-bucket-name/docker-test-20250806-131530.txt
    📊 上传文件信息:
       - 大小: 156 字节
       - 最后修改: 2025-08-06 13:15:30+00:00
@@ -142,11 +142,11 @@ ls -la /tmp/download/
    ✅ 文件下载成功，大小: 156 字节
    ✅ 文件内容验证成功，上传下载完整
    📁 保留测试文件...
-   ✅ S3 文件已保留: s3://share-something-only-from-here/docker-test-20250806-131530.txt
+   ✅ S3 文件已保留: s3://your-s3-bucket-name/docker-test-20250806-131530.txt
    ✅ 原始测试文件已删除: /tmp/docker-test-20250806-131530.txt
    ✅ 下载文件已保留: /tmp/download/downloaded-docker-test-20250806-131530.txt
    📋 文件保留总结:
-      - S3 文件: s3://share-something-only-from-here/docker-test-20250806-131530.txt
+      - S3 文件: s3://your-s3-bucket-name/docker-test-20250806-131530.txt
       - 本地文件: /tmp/download/downloaded-docker-test-20250806-131530.txt
 
 ============================================================

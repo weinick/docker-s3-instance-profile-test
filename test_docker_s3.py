@@ -82,7 +82,8 @@ def test_docker_s3():
 
 def test_file_operations(s3_client):
     """测试 S3 文件上传和下载操作"""
-    bucket_name = 'share-something-only-from-here'
+    # 注意：请将下面的桶名替换为您有权限访问的实际 S3 桶名
+    bucket_name = 'your-s3-bucket-name'  # 请替换为您的实际 S3 桶名
     test_file_name = f'docker-test-{datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
     local_test_file = f'/tmp/{test_file_name}'
     
