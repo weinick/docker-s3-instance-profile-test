@@ -3,6 +3,41 @@
 ## 📋 概述
 由于 EC2 实例无法访问 Docker Hub，我们在本地构建 Docker 镜像，然后传输到 EC2 进行测试。
 
+## ⚙️ 配置要求
+
+在开始之前，您需要准备以下信息：
+
+### 1. **S3 桶名称**
+- 您需要有一个可以读写的 S3 桶
+- 确保 EC2 实例的 IAM 角色有该桶的访问权限
+
+### 2. **EC2 实例信息**
+- EC2 实例的公网 IP 地址
+- SSH 密钥文件路径
+- 确保 EC2 实例已安装 Docker
+
+### 3. **IAM 权限**
+EC2 实例的 IAM 角色需要以下权限：
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::your-s3-bucket-name",
+                "arn:aws:s3:::your-s3-bucket-name/*"
+            ]
+        }
+    ]
+}
+```
+
 ## 🚀 操作步骤
 
 ### 步骤 1: 本地构建 Docker 镜像
@@ -20,19 +55,23 @@ chmod +x build_and_save.sh
 
 这将创建一个 `s3-test-image.tar` 文件。
 
-### 步骤 2: 手动上传到 EC2
+### 步骤 2: 上传到 EC2
 
-#### 方法 A: 使用 SCP 上传
+#### 方法 A: 使用自动化脚本（推荐）
+```bash
+# 使用脚本上传（需要提供 EC2 IP 地址）
+chmod +x upload_to_ec2.sh
+./upload_to_ec2.sh YOUR_EC2_IP [your-key.pem]
+
+# 示例：
+./upload_to_ec2.sh 52.81.92.36
+./upload_to_ec2.sh 52.81.92.36 ~/.ssh/my-key.pem
+```
+
+#### 方法 B: 使用 SCP 手动上传
 ```bash
 # 替换 your-key.pem 为您的实际密钥文件路径，YOUR_EC2_IP 为您的 EC2 实例 IP
 scp -i your-key.pem s3-test-image.tar ec2-user@YOUR_EC2_IP:~/
-```
-
-#### 方法 B: 使用自动化脚本
-```bash
-# 先编辑 upload_to_ec2.sh，修改 KEY_FILE 变量
-chmod +x upload_to_ec2.sh
-./upload_to_ec2.sh
 ```
 
 ### 步骤 3: 在 EC2 上加载并测试
@@ -51,6 +90,13 @@ sudo docker load -i s3-test-image.tar
 sudo docker images | grep s3-test
 
 # 运行测试（推荐使用 :Z 参数解决 SELinux 权限问题）
+# 方法 1: 使用环境变量指定 S3 桶名（推荐）
+sudo docker run --rm -v /tmp:/host-tmp:Z -e S3_BUCKET_NAME=your-actual-bucket-name s3-test:latest
+
+# 方法 2: 使用命令行参数指定 S3 桶名
+sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest your-actual-bucket-name
+
+# 方法 3: 使用默认桶名（需要修改源码）
 sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest
 
 # 检查主机上下载的文件
@@ -61,6 +107,48 @@ cat /tmp/download/downloaded-docker-test-*.txt
 
 # 清理
 rm -f s3-test-image.tar
+```
+
+
+
+## 🔧 配置说明
+
+### S3 桶名配置
+
+测试脚本支持三种方式指定 S3 桶名（按优先级排序）：
+
+1. **命令行参数**（最高优先级）：
+   ```bash
+   sudo docker run --rm -v /tmp:/host-tmp:Z s3-test:latest your-actual-bucket-name
+   ```
+
+2. **环境变量**：
+   ```bash
+   sudo docker run --rm -v /tmp:/host-tmp:Z -e S3_BUCKET_NAME=your-actual-bucket-name s3-test:latest
+   ```
+
+3. **默认值**（最低优先级）：
+   - 如果以上两种方式都没有指定，将使用默认值 `your-s3-bucket-name`
+   - 脚本会显示警告信息，提醒您指定实际的桶名
+
+### 脚本参数说明
+
+#### upload_to_ec2.sh 脚本
+```bash
+./upload_to_ec2.sh <EC2_IP> [KEY_FILE]
+```
+
+**参数说明**：
+- `EC2_IP`: EC2 实例的 IP 地址（必需）
+- `KEY_FILE`: SSH 密钥文件路径（可选，默认: your-key.pem）
+
+**使用示例**：
+```bash
+# 使用默认密钥文件
+./upload_to_ec2.sh 52.81.92.36
+
+# 指定密钥文件
+./upload_to_ec2.sh 52.81.92.36 ~/.ssh/my-key.pem
 ```
 
 ### 故障排除
@@ -106,6 +194,12 @@ ls -la /tmp/download/
 测试时间: 2025-08-06 13:15:30.123456
 ============================================================
 
+⚠️  警告: 使用默认桶名 'your-s3-bucket-name'
+   请通过以下方式之一指定实际的 S3 桶名:
+   1. 命令行参数: python test_docker_s3.py your-actual-bucket-name
+   2. 环境变量: export S3_BUCKET_NAME=your-actual-bucket-name
+   3. Docker 环境变量: docker run -e S3_BUCKET_NAME=your-actual-bucket-name ...
+
 1. 测试 boto3 S3 访问...
 ✅ Docker 容器中 S3 访问成功！
    共有 90 个存储桶
@@ -125,6 +219,12 @@ ls -la /tmp/download/
    ARN: arn:aws:sts::123456789012:assumed-role/YOUR-INSTANCE-ROLE-NAME/i-1234567890abcdef0
 
 4. 测试 S3 文件上传和下载...
+   🔍 检查挂载点: /host-tmp
+   ✅ 挂载点存在，使用主机路径: /host-tmp/download
+   ✅ 挂载点可写
+   ✅ 下载目录创建成功: /host-tmp/download
+   ✅ 下载目录验证存在: /host-tmp/download
+   📁 下载文件路径: /host-tmp/download/downloaded-docker-test-xxx.txt
    📝 创建测试文件: /tmp/docker-test-20250806-131530.txt
    ✅ 测试文件创建成功，大小: 156 字节
    📤 上传文件到 S3 桶: your-s3-bucket-name

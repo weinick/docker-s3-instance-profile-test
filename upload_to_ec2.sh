@@ -1,8 +1,29 @@
 #!/bin/bash
 
+# 显示使用方法
+show_usage() {
+    echo "使用方法: $0 <EC2_IP> [KEY_FILE]"
+    echo ""
+    echo "参数说明:"
+    echo "  EC2_IP    - EC2 实例的 IP 地址 (必需)"
+    echo "  KEY_FILE  - SSH 密钥文件路径 (可选，默认: your-key.pem)"
+    echo ""
+    echo "示例:"
+    echo "  $0 52.81.92.36"
+    echo "  $0 52.81.92.36 ~/.ssh/my-key.pem"
+    echo ""
+    exit 1
+}
+
+# 检查参数
+if [ $# -lt 1 ]; then
+    echo "❌ 错误: 缺少必需的参数"
+    show_usage
+fi
+
 # 配置变量
-EC2_IP="YOUR_EC2_IP"  # 请替换为您的实际 EC2 IP 地址
-KEY_FILE="your-key.pem"  # 请替换为您的实际密钥文件路径
+EC2_IP="$1"
+KEY_FILE="${2:-your-key.pem}"  # 如果没有提供第二个参数，使用默认值
 IMAGE_FILE="s3-test-image.tar"
 
 echo "=========================================="

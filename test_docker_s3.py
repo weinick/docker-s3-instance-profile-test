@@ -5,7 +5,30 @@ import requests
 import json
 import os
 import tempfile
+import sys
 from datetime import datetime
+
+def get_s3_bucket_name():
+    """获取 S3 桶名，优先级：命令行参数 > 环境变量 > 默认值"""
+    # 1. 检查命令行参数
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    
+    # 2. 检查环境变量
+    bucket_name = os.environ.get('S3_BUCKET_NAME')
+    if bucket_name:
+        return bucket_name
+    
+    # 3. 默认值（需要用户修改）
+    default_bucket = 'your-s3-bucket-name'
+    print(f"⚠️  警告: 使用默认桶名 '{default_bucket}'")
+    print(f"   请通过以下方式之一指定实际的 S3 桶名:")
+    print(f"   1. 命令行参数: python test_docker_s3.py your-actual-bucket-name")
+    print(f"   2. 环境变量: export S3_BUCKET_NAME=your-actual-bucket-name")
+    print(f"   3. Docker 环境变量: docker run -e S3_BUCKET_NAME=your-actual-bucket-name ...")
+    print("")
+    
+    return default_bucket
 
 def test_docker_s3():
     """测试 Docker 容器中的 S3 访问"""
@@ -82,8 +105,8 @@ def test_docker_s3():
 
 def test_file_operations(s3_client):
     """测试 S3 文件上传和下载操作"""
-    # 注意：请将下面的桶名替换为您有权限访问的实际 S3 桶名
-    bucket_name = 'your-s3-bucket-name'  # 请替换为您的实际 S3 桶名
+    # 获取 S3 桶名
+    bucket_name = get_s3_bucket_name()
     test_file_name = f'docker-test-{datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
     local_test_file = f'/tmp/{test_file_name}'
     
