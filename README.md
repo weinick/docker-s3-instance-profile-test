@@ -71,6 +71,22 @@ sudo docker run --rm -v /tmp:/host-tmp s3-test:latest ls -la /host-tmp
 sudo docker run --rm s3-test:latest
 ```
 
+如果下载文件找不到，请检查：
+```bash
+# 1. 确认使用了正确的挂载参数
+sudo docker run --rm -v /tmp:/host-tmp s3-test:latest
+
+# 2. 检查主机 /tmp 目录权限
+ls -la /tmp/
+
+# 3. 手动创建 download 目录并设置权限
+sudo mkdir -p /tmp/download
+sudo chmod 755 /tmp/download
+
+# 4. 运行后检查文件
+ls -la /tmp/download/
+```
+
 ## 📺 预期测试结果
 
 成功时的显示：

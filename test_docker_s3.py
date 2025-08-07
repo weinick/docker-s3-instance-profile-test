@@ -88,26 +88,48 @@ def test_file_operations(s3_client):
     
     # 检查挂载点是否存在
     host_tmp_path = '/host-tmp'
+    print(f"   🔍 检查挂载点: {host_tmp_path}")
+    
     if not os.path.exists(host_tmp_path):
-        print(f"   ⚠️  挂载点不存在: {host_tmp_path}")
+        print(f"   ❌ 挂载点不存在: {host_tmp_path}")
         print(f"   💡 请确保使用 -v /tmp:/host-tmp 参数运行容器")
+        print(f"   📝 正确命令: sudo docker run --rm -v /tmp:/host-tmp s3-test:latest")
         # 回退到容器内路径
         download_dir = '/tmp/download'
         print(f"   🔄 回退到容器内路径: {download_dir}")
+        print(f"   ⚠️  注意: 文件将保存在容器内，容器删除后文件会丢失")
     else:
         # 创建主机的 /tmp/download 目录（通过挂载点访问）
         download_dir = '/host-tmp/download'
-        print(f"   📁 使用主机挂载路径: {download_dir}")
+        print(f"   ✅ 挂载点存在，使用主机路径: {download_dir}")
+        
+        # 测试挂载点是否可写
+        try:
+            test_file = f'{host_tmp_path}/test_write.tmp'
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+            print(f"   ✅ 挂载点可写")
+        except Exception as e:
+            print(f"   ❌ 挂载点不可写: {e}")
     
     # 创建下载目录
     try:
         os.makedirs(download_dir, exist_ok=True)
         print(f"   ✅ 下载目录创建成功: {download_dir}")
+        
+        # 验证目录是否真的存在
+        if os.path.exists(download_dir):
+            print(f"   ✅ 下载目录验证存在: {download_dir}")
+        else:
+            print(f"   ❌ 下载目录创建后不存在: {download_dir}")
+            
     except Exception as e:
         print(f"   ❌ 下载目录创建失败: {e}")
         return
     
     download_file = f'{download_dir}/downloaded-{test_file_name}'
+    print(f"   📁 下载文件路径: {download_file}")
     
     try:
         # 步骤 1: 创建测试文件
@@ -159,11 +181,19 @@ def test_file_operations(s3_client):
         print(f"   📥 从 S3 下载文件到: {download_file}")
         try:
             s3_client.download_file(bucket_name, test_file_name, download_file)
+            print(f"   ✅ S3 下载操作完成")
             
-            # 验证下载的文件
+            # 立即验证下载的文件是否存在
             if os.path.exists(download_file):
                 download_size = os.path.getsize(download_file)
                 print(f"   ✅ 文件下载成功，大小: {download_size} 字节")
+                print(f"   📍 文件位置: {download_file}")
+                
+                # 如果使用了挂载，显示主机路径
+                if download_dir.startswith('/host-tmp'):
+                    host_path = download_file.replace('/host-tmp', '/tmp')
+                    print(f"   🏠 主机路径: {host_path}")
+                    print(f"   💡 在主机上使用此命令查看: cat {host_path}")
                 
                 # 比较文件内容
                 with open(local_test_file, 'r', encoding='utf-8') as f1, \
@@ -175,8 +205,21 @@ def test_file_operations(s3_client):
                         print(f"   ✅ 文件内容验证成功，上传下载完整")
                     else:
                         print(f"   ⚠️  文件内容不匹配")
+                        print(f"   📝 原始内容长度: {len(original_content)}")
+                        print(f"   📝 下载内容长度: {len(downloaded_content)}")
             else:
-                print(f"   ❌ 下载文件不存在")
+                print(f"   ❌ 下载文件不存在: {download_file}")
+                print(f"   🔍 检查目录内容:")
+                try:
+                    files = os.listdir(download_dir)
+                    if files:
+                        for file in files:
+                            print(f"      - {file}")
+                    else:
+                        print(f"      目录为空")
+                except Exception as e:
+                    print(f"      无法列出目录: {e}")
+                return
                 
         except ClientError as e:
             print(f"   ❌ 下载失败: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
